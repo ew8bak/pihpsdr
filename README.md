@@ -22,7 +22,7 @@ Fork of John Melton G0ORX's pihpsdr.
   pacman -S mingw-w64-x86_64-portaudio
 ```
 
-### linhpsdr requires WDSP to be built and installed (MSYS2 MINGW64 console)
+### piHPSDR requires WDSP to be built and installed (MSYS2 MINGW64 console)
 
 ```
   git clone https://github.com/ew8bak/wdsp
