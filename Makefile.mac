@@ -1,0 +1,208 @@
+# Get git commit version and date
+GIT_DATE := $(firstword $(shell git --no-pager show --date=short --format="%ai" --name-only))
+GIT_VERSION := $(shell git describe --abbrev=0 --tags)
+
+#GPIO_INCLUDE = GPIO
+PURESIGNAL_INCLUDE = PURESIGNAL
+MIDI_INCLUDE = MIDI
+#USBOZY_INCLUDE = USBOZY
+#LOCALCW_INCLUDE = LOCALCW
+#SOAPYSDR_INCLUDE = SOAPYSDR
+#SX1509_INCLUDE = sx1509
+#STEMLAB_DISCOVERY = STEMLAB_DISCOVERY
+#STEMLAB_DISCOVERY = STEMLAB_DISCOVERY_NOAVAHI
+#DEBUG_OPTION = -D DEBUG
+#PTT_INCLUDE = PTT
+#SERVER_INCLUDE = SERVER
+#SMALL_SCREEN_OPTIONS = -D SMALL_SCREEN
+
+BINDIR = bin
+INCDIR = include
+OBJDIR = obj
+SRCDIR = src
+
+TARGET = pihpsdr
+
+CC = gcc
+LINK = gcc
+
+GTKINCLUDES = `pkg-config --cflags gtk+-3.0`
+GTKLIBS = `pkg-config --libs gtk+-3.0`
+AUDIO_INC = `pkg-config --cflags portaudio-2.0`
+AUDIO_LIBS = `pkg-config --libs portaudio-2.0`
+AUDIO_OPTIONS = -D PORTAUDIO
+
+CFLAGS=	-g -Wno-deprecated-declarations
+LFLAGS = -Wall -I. -lm
+
+ifeq ($(MIDI_INCLUDE),MIDI)
+SOURCES += $(SRCDIR)/mac_midi.c
+SOURCES += $(SRCDIR)/midi2.c
+SOURCES += $(SRCDIR)/midi3.c
+SOURCES += $(SRCDIR)/midi_menu.c
+MIDI_OPTIONS = -D MIDI
+MIDI_LIBS = -framework CoreMIDI -framework Foundation
+endif
+
+ifeq ($(PURESIGNAL_INCLUDE),PURESIGNAL)
+SOURCES += $(SRCDIR)/ps_menu.c
+PURESIGNAL_OPTIONS = -D PURESIGNAL
+endif
+
+ifeq ($(REMOTE_INCLUDE),REMOTE)
+SOURCES += $(SRCDIR)/remote_radio.c
+SOURCES += $(SRCDIR)/remote_receiver.c
+REMOTE_OPTIONS = -D REMOTE
+endif
+
+ifeq ($(USBOZY_INCLUDE),USBOZY)
+SOURCES += $(SRCDIR)/ozyio.c
+USBOZY_OPTIONS = -D USBOZY
+USBOZY_LIBS = -lusb-1.0
+endif
+
+ifeq ($(SOAPYSDR_INCLUDE),SOAPYSDR)
+SOURCES += $(SRCDIR)/soapy_discovery.c
+SOURCES += $(SRCDIR)/soapy_protocol.c
+SOAPYSDR_OPTIONS = -D SOAPYSDR
+SOAPYSDRLIBS = -lSoapySDR
+endif
+
+ifeq ($(LOCALCW_INCLUDE),LOCALCW)
+SOURCES += $(SRCDIR)/iambic.c
+LOCALCW_OPTIONS = -D LOCALCW
+endif
+
+ifeq ($(PTT_INCLUDE),PTT)
+PTT_OPTIONS = -D PTT
+endif
+
+ifeq ($(GPIO_INCLUDE),GPIO)
+GPIO_OPTIONS= -D GPIO
+GPIOD_VERSION=$(shell pkg-config --modversion libgpiod)
+ifeq ($(GPIOD_VERSION),1.2)
+GPIO_OPTIONS += -D OLD_GPIOD
+endif
+GPIO_LIBS = -lgpiod -li2c
+endif
+
+ifeq ($(STEMLAB_DISCOVERY), STEMLAB_DISCOVERY)
+SOURCES += $(SRCDIR)/stemlab_discovery.c
+STEMLAB_OPTIONS = -D STEMLAB_DISCOVERY \
+  `pkg-config --cflags avahi-gobject` \
+  `pkg-config --cflags libcurl`
+STEMLAB_LIBS = `pkg-config --libs avahi-gobject` `pkg-config --libs libcurl`
+endif
+
+ifeq ($(STEMLAB_DISCOVERY), STEMLAB_DISCOVERY_NOAVAHI)
+SOURCES += $(SRCDIR)/stemlab_discovery.c
+STEMLAB_OPTIONS = -D STEMLAB_DISCOVERY -D NO_AVAHI `pkg-config --cflags libcurl`
+STEMLAB_LIBS = `pkg-config --libs libcurl`
+endif
+
+ifeq ($(SERVER_INCLUDE), SERVER)
+SOURCES += $(SRCDIR)/client_server.c
+SOURCES += $(SRCDIR)/server_menu.c
+SERVER_OPTIONS = -D CLIENT_SERVER
+endif
+
+OPTIONS=$(SMALL_SCREEN_OPTIONS) $(MIDI_OPTIONS) $(PURESIGNAL_OPTIONS) $(REMOTE_OPTIONS) $(USBOZY_OPTIONS) $(AUDIO_OPTIONS) \
+	$(GPIO_OPTIONS) $(SOAPYSDR_OPTIONS) $(LOCALCW_OPTIONS) \
+	$(STEMLAB_OPTIONS) $(PTT_OPTIONS) $(SERVER_OPTIONS) \
+	-D GIT_DATE='"$(GIT_DATE)"' -D GIT_VERSION='"$(GIT_VERSION)"' $(DEBUG_OPTION)
+
+LIBS = -lm -framework IOKit -lwdsp -lpthread $(GTKLIBS) $(AUDIO_LIBS) $(USBOZY_LIBS) $(GPIO_LIBS) $(SOAPYSDRLIBS) $(STEMLAB_LIBS) $(MIDI_LIBS)
+INCLUDES = $(GTKINCLUDES) $(AUDIO_INC) -I$(INCDIR)
+COMPILE = $(CC) $(CFLAGS) $(OPTIONS) $(INCLUDES)
+
+SOURCES += $(SRCDIR)/MacOS.c
+SOURCES += $(SRCDIR)/band.c
+SOURCES += $(SRCDIR)/discovered.c
+SOURCES += $(SRCDIR)/discovery.c
+SOURCES += $(SRCDIR)/filter.c
+SOURCES += $(SRCDIR)/main.c
+SOURCES += $(SRCDIR)/new_menu.c
+SOURCES += $(SRCDIR)/about_menu.c
+SOURCES += $(SRCDIR)/exit_menu.c
+SOURCES += $(SRCDIR)/radio_menu.c
+SOURCES += $(SRCDIR)/rx_menu.c
+SOURCES += $(SRCDIR)/ant_menu.c
+SOURCES += $(SRCDIR)/display_menu.c
+SOURCES += $(SRCDIR)/dsp_menu.c
+SOURCES += $(SRCDIR)/pa_menu.c
+SOURCES += $(SRCDIR)/cw_menu.c
+SOURCES += $(SRCDIR)/oc_menu.c
+SOURCES += $(SRCDIR)/xvtr_menu.c
+SOURCES += $(SRCDIR)/equalizer_menu.c
+SOURCES += $(SRCDIR)/step_menu.c
+SOURCES += $(SRCDIR)/meter_menu.c
+SOURCES += $(SRCDIR)/band_menu.c
+SOURCES += $(SRCDIR)/bandstack_menu.c
+SOURCES += $(SRCDIR)/mode_menu.c
+SOURCES += $(SRCDIR)/filter_menu.c
+SOURCES += $(SRCDIR)/noise_menu.c
+SOURCES += $(SRCDIR)/agc_menu.c
+SOURCES += $(SRCDIR)/vox_menu.c
+SOURCES += $(SRCDIR)/fft_menu.c
+SOURCES += $(SRCDIR)/diversity_menu.c
+SOURCES += $(SRCDIR)/tx_menu.c
+SOURCES += $(SRCDIR)/vfo_menu.c
+SOURCES += $(SRCDIR)/test_menu.c
+SOURCES += $(SRCDIR)/meter.c
+SOURCES += $(SRCDIR)/mode.c
+SOURCES += $(SRCDIR)/portaudio.c
+SOURCES += $(SRCDIR)/old_discovery.c
+SOURCES += $(SRCDIR)/new_discovery.c
+SOURCES += $(SRCDIR)/old_protocol.c
+SOURCES += $(SRCDIR)/new_protocol.c
+SOURCES += $(SRCDIR)/new_protocol_programmer.c
+SOURCES += $(SRCDIR)/rx_panadapter.c
+SOURCES += $(SRCDIR)/tx_panadapter.c
+SOURCES += $(SRCDIR)/property.c
+SOURCES += $(SRCDIR)/radio.c
+SOURCES += $(SRCDIR)/receiver.c
+SOURCES += $(SRCDIR)/rigctl.c
+SOURCES += $(SRCDIR)/rigctl_menu.c
+SOURCES += $(SRCDIR)/toolbar.c
+SOURCES += $(SRCDIR)/transmitter.c
+SOURCES += $(SRCDIR)/zoompan.c
+SOURCES += $(SRCDIR)/sliders.c
+SOURCES += $(SRCDIR)/version.c
+SOURCES += $(SRCDIR)/vfo.c
+SOURCES += $(SRCDIR)/waterfall.c
+SOURCES += $(SRCDIR)/button_text.c
+SOURCES += $(SRCDIR)/vox.c
+SOURCES += $(SRCDIR)/update.c
+SOURCES += $(SRCDIR)/store.c
+SOURCES += $(SRCDIR)/store_menu.c
+SOURCES += $(SRCDIR)/memory.c
+SOURCES += $(SRCDIR)/led.c
+SOURCES += $(SRCDIR)/ext.c
+SOURCES += $(SRCDIR)/error_handler.c
+SOURCES += $(SRCDIR)/cwramp.c
+SOURCES += $(SRCDIR)/protocols.c
+SOURCES += $(SRCDIR)/css.c
+SOURCES += $(SRCDIR)/actions.c
+SOURCES += $(SRCDIR)/action_dialog.c
+SOURCES += $(SRCDIR)/configure.c
+SOURCES += $(SRCDIR)/i2c.c
+SOURCES += $(SRCDIR)/gpio.c
+SOURCES += $(SRCDIR)/encoder_menu.c
+SOURCES += $(SRCDIR)/switch_menu.c
+SOURCES += $(SRCDIR)/toolbar_menu.c
+
+OBJECTS  := $(SOURCES:$(SRCDIR)/%.c=$(OBJDIR)/%.o)
+
+$(BINDIR)/$(TARGET): $(OBJECTS)
+	@mkdir -p '$(@D)'
+	@$(LINK) $(OBJECTS) $(LFLAGS) $(LIBS) -o $@
+	@echo "Linking complete!"
+
+$(OBJECTS): $(OBJDIR)/%.o : $(SRCDIR)/%.c
+	@mkdir -p '$(@D)'
+	@$(COMPILE) -c $< -o $@
+	@echo "Compiled "$<" successfully!"
+
+clean:
+	-rm -rf $(OBJDIR)
+	-rm -rf $(BINDIR)
