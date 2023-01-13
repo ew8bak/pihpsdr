@@ -9,6 +9,7 @@
                 //"-D GIT_DATE='`git --no-pager show --date=short --format='%ai' --name-only | head -1`'",
                // "-D GIT_COMMIT='`git --no-pager show --date=short --format='%H' --name-only | head -1`'",
                 "-D PURESIGNAL",
+                "-D ANDROMEDA",
                 "`pkg-config",
                 "--libs",
                 "--cflags",
@@ -99,6 +100,7 @@
                 "${workspaceFolder}/src/toolbar_menu.c",
                 "${workspaceFolder}/src/pulseaudio.c",
                 "${workspaceFolder}/src/ps_menu.c",
+                "${workspaceFolder}/src/andromeda.c",
                 "-o",
                 "${workspaceFolder}/bin/pihpsdr"
             ],
@@ -109,7 +111,7 @@
                 "$gcc"
             ],
             "group": "build",
-            "detail": "компилятор: /usr/bin/gcc"
+            "detail": "compiler: /usr/bin/gcc"
         },
         {
             "type": "cppbuild",
@@ -120,6 +122,7 @@
                // "-D GIT_COMMIT='`git --no-pager show --date=short --format='%H' --name-only | head -1`'",
                 "-D PURESIGNAL",
                 "-D PORTAUDIO",
+                "-D ANDROMEDA",
                 "`pkg-config",
                 "--libs",
                 "--cflags",
@@ -213,6 +216,7 @@
                 "${workspaceFolder}/src/toolbar_menu.c",
                 "${workspaceFolder}/src/portaudio.c",
                 "${workspaceFolder}/src/ps_menu.c",
+                "${workspaceFolder}/src/andromeda.c",
                 "-o",
                 "${workspaceFolder}/bin/pihpsdr"
             ],
@@ -223,7 +227,7 @@
                 "$gcc"
             ],
             "group": "build",
-            "detail": "компилятор: /usr/bin/gcc"
+            "detail": "compiler: /usr/bin/gcc"
         },
         {
             "type": "cppbuild",
@@ -378,7 +382,7 @@
                 "$gcc"
             ],
             "group": "build",
-            "detail": "компилятор: C:/msys64/mingw64/bin/gcc.exe"
+            "detail": "compiler: C:/msys64/mingw64/bin/gcc.exe"
         }
     ]
 }
