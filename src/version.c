@@ -21,7 +21,7 @@ char build_date[]="15.12.2022";
 char build_version[]="2.0.8-rc1-EW8BAK-mod";
 
 char version[]="2.0.8-rc1-EW8BAK-mod"
-#if defined(GPIO) || defined(PURESIGNAL) || defined(SOAPYSDR) || defined(MIDI)
+#if defined(GPIO) || defined(PURESIGNAL) || defined(SOAPYSDR) || defined(MIDI) || defined(ANDROMEDA)
 " includes"
 #endif
 #ifdef GPIO
@@ -38,6 +38,9 @@ char version[]="2.0.8-rc1-EW8BAK-mod"
 #endif
 #ifdef LOCALCW
 " LOCALCW"
+#endif
+#ifdef ANDROMEDA
+" ANDROMEDA"
 #endif
 //GIT_COMMIT;
 ;
