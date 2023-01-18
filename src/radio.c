@@ -42,7 +42,6 @@
 #include "dac.h"
 #include "audio.h"
 #include "discovered.h"
-// #include "discovery.h"
 #include "filter.h"
 #include "main.h"
 #include "mode.h"
@@ -83,6 +82,10 @@
 #endif
 #ifdef CLIENT_SERVER
 #include "client_server.h"
+#endif
+#ifdef ANDROMEDA
+#include "andromeda.h"
+#include "andromeda_menu.h"
 #endif
 
 #define min(x, y) (x < y ? x : y)
