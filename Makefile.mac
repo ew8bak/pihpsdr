@@ -47,6 +47,7 @@ endif
 
 ifeq ($(ANDROMEDA_INCLUDE),ANDROMEDA)
 SOURCES += $(SRCDIR)/andromeda.c
+SOURCES += $(SRCDIR)/andromeda_menu.c
 ANDROMEDA_OPTIONS = -D ANDROMEDA
 endif
 

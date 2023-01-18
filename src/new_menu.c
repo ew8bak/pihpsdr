@@ -68,6 +68,9 @@
 #ifdef MIDI
 #include "midi_menu.h"
 #endif
+#ifdef ANDROMEDA
+#include "andromeda_menu.h"
+#endif
 
 static GtkWidget *menu_b = NULL;
 
@@ -209,6 +212,15 @@ static gboolean rigctl_cb(GtkWidget *widget, GdkEventButton *event, gpointer dat
   rigctl_menu(top_window);
   return TRUE;
 }
+
+#ifdef ANDROMEDA
+static gboolean andromeda_cb(GtkWidget *widget, GdkEventButton *event, gpointer data)
+{
+  cleanup();
+  andromeda_menu(top_window);
+  return TRUE;
+}
+#endif
 
 #ifdef GPIO
 static gboolean encoder_cb(GtkWidget *widget, GdkEventButton *event, gpointer data)
@@ -676,6 +688,13 @@ void new_menu()
     g_signal_connect(rigctl_b, "button-press-event", G_CALLBACK(rigctl_cb), NULL);
     gtk_grid_attach(GTK_GRID(grid), rigctl_b, (i % 5), i / 5, 1, 1);
     i++;
+    
+#ifdef ANDROMEDA
+    GtkWidget *andromeda_b = gtk_button_new_with_label("Andromeda");
+    g_signal_connect(andromeda_b, "button-press-event", G_CALLBACK(andromeda_cb), NULL);
+    gtk_grid_attach(GTK_GRID(grid), andromeda_b, (i % 5), i / 5, 1, 1);
+    i++;
+#endif
 
     switch (controller)
     {

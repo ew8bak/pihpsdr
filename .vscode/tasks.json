@@ -101,6 +101,7 @@
                 "${workspaceFolder}/src/pulseaudio.c",
                 "${workspaceFolder}/src/ps_menu.c",
                 "${workspaceFolder}/src/andromeda.c",
+                "${workspaceFolder}/src/andromeda_menu.c",
                 "-o",
                 "${workspaceFolder}/bin/pihpsdr"
             ],
@@ -217,6 +218,7 @@
                 "${workspaceFolder}/src/portaudio.c",
                 "${workspaceFolder}/src/ps_menu.c",
                 "${workspaceFolder}/src/andromeda.c",
+                "${workspaceFolder}/src/andromeda_menu.c",
                 "-o",
                 "${workspaceFolder}/bin/pihpsdr"
             ],
