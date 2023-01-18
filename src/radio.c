@@ -2458,6 +2458,18 @@ void radioRestoreState()
     if (value)
       serial_enable = atoi(value);
 
+#ifdef ANDROMEDA
+    value = getProperty("andromeda_serial_port");
+    if (value)
+      strcpy(andromeda_serial_port, value);
+    value = getProperty("andromeda_serial_baud_rate");
+    if (value)
+      andromeda_serial_baud_rate = atoi(value);
+    value = getProperty("andromeda_serial_enable");
+    if (value)
+      andromeda_serial_enable = atoi(value);
+#endif
+
     /*
     value=getProperty("adc_0_attenuation");
     if(value) adc_attenuation[0]=atoi(value);
@@ -2950,6 +2962,15 @@ void radioSaveState()
     setProperty("serial_baud_rate", value);
     sprintf(value, "%d", serial_enable);
     setProperty("serial_enable", value);
+
+#ifdef ANDROMEDA
+    sprintf(value, "%s", andromeda_serial_port);
+    setProperty("andromeda_serial_port", value);
+    sprintf(value, "%d", andromeda_serial_baud_rate);
+    setProperty("andromeda_serial_baud_rate", value);
+    sprintf(value, "%d", andromeda_serial_enable);
+    setProperty("andromeda_serial_enable", value);
+#endif
 
     sprintf(value, "%d", display_sequence_errors);
     setProperty("radio.display_sequence_errors", value);
