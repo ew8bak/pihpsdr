@@ -23,11 +23,9 @@
 
 extern void andromeda_menu(GtkWidget *parent);
 extern char andromeda_serial_port[];
-extern void disable_rigctl();
 extern void disable_serial();
 
 extern int andromeda_serial_baud_rate;
-extern int andromeda_serial_parity;
 extern int andromeda_serial_enable;
 
 extern gboolean andromeda_debug;

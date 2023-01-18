@@ -119,12 +119,12 @@ void andromeda_menu(GtkWidget *parent)
   gtk_window_set_title(GTK_WINDOW(dialog), "piHPSDR - Andromeda");
   g_signal_connect(dialog, "delete_event", G_CALLBACK(delete_event), NULL);
 
-  GdkRGBA color;
-  color.red = 1.0;
-  color.green = 1.0;
-  color.blue = 1.0;
-  color.alpha = 1.0;
-  gtk_widget_override_background_color(dialog, GTK_STATE_FLAG_NORMAL, &color);
+//  GdkRGBA color;
+//  color.red = 1.0;
+//  color.green = 1.0;
+//  color.blue = 1.0;
+//  color.alpha = 1.0;
+//  gtk_widget_override_background_color(dialog, GTK_STATE_FLAG_NORMAL, &color);
 
   GtkWidget *content = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
 
@@ -135,33 +135,25 @@ void andromeda_menu(GtkWidget *parent)
   g_signal_connect(close_b, "pressed", G_CALLBACK(close_cb), NULL);
   gtk_grid_attach(GTK_GRID(grid), close_b, 0, 0, 1, 1);
 
-  GtkWidget *andromeda_debug_b = gtk_check_button_new_with_label("Debug Andromeda");
-  gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(andromeda_debug_b), andromeda_debug);
-  gtk_widget_show(andromeda_debug_b);
-  gtk_grid_attach(GTK_GRID(grid), andromeda_debug_b, 3, 0, 1, 1);
-  g_signal_connect(andromeda_debug_b, "toggled", G_CALLBACK(andromeda_debug_cb), NULL);
-
-    /* Put the Serial Port stuff here */
-  GtkWidget *serial_enable_b = gtk_check_button_new_with_label("Andromeda Serial Port Enable");
+  GtkWidget *serial_enable_b = gtk_check_button_new_with_label("Andromeda Enable");
   gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(serial_enable_b), andromeda_serial_enable);
   gtk_widget_show(serial_enable_b);
-  gtk_grid_attach(GTK_GRID(grid), serial_enable_b, 0, 3, 1, 1);
+  gtk_grid_attach(GTK_GRID(grid), serial_enable_b, 1, 1, 1, 1);
   g_signal_connect(serial_enable_b, "toggled", G_CALLBACK(serial_enable_cb), NULL);
 
   GtkWidget *serial_text_label = gtk_label_new(NULL);
-  gtk_label_set_markup(GTK_LABEL(serial_text_label), "<b>Serial Port: </b>");
-  gtk_grid_attach(GTK_GRID(grid), serial_text_label, 0, 4, 1, 1);
+  gtk_label_set_markup(GTK_LABEL(serial_text_label), "<b>Serial Port:</b>");
+  gtk_grid_attach(GTK_GRID(grid), serial_text_label, 1, 2, 1, 1);
+
+  GtkWidget *baud_rate_label = gtk_label_new(NULL);
+  gtk_label_set_markup(GTK_LABEL(baud_rate_label), "<b>Baud Rate:</b>");
+  gtk_widget_show(baud_rate_label);
+  gtk_grid_attach(GTK_GRID(grid), baud_rate_label, 1, 3, 1, 1);
 
   serial_port_entry = gtk_entry_new();
   gtk_entry_set_text(GTK_ENTRY(serial_port_entry), andromeda_serial_port);
   gtk_widget_show(serial_port_entry);
-  gtk_grid_attach(GTK_GRID(grid), serial_port_entry, 1, 4, 2, 1);
-
-  // Serial baud rate here
-  GtkWidget *baud_rate_label = gtk_label_new(NULL);
-  gtk_label_set_markup(GTK_LABEL(baud_rate_label), "<b>Baud Rate:</b>");
-  gtk_widget_show(baud_rate_label);
-  gtk_grid_attach(GTK_GRID(grid), baud_rate_label, 0, 5, 1, 1);
+  gtk_grid_attach(GTK_GRID(grid), serial_port_entry, 2, 2, 4, 1);
 
 #ifdef _WIN32
   GtkWidget *baud_rate_b4800 = gtk_radio_button_new_with_label(NULL, "4800");
@@ -172,27 +164,33 @@ void andromeda_menu(GtkWidget *parent)
   GtkWidget *baud_rate_b4800 = gtk_radio_button_new_with_label(NULL, "4800");
   gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(baud_rate_b4800), andromeda_serial_baud_rate == B4800);
   gtk_widget_show(baud_rate_b4800);
-  gtk_grid_attach(GTK_GRID(grid), baud_rate_b4800, 1, 5, 1, 1);
+  gtk_grid_attach(GTK_GRID(grid), baud_rate_b4800, 2, 3, 1, 1);
   g_signal_connect(baud_rate_b4800, "toggled", G_CALLBACK(baud_rate_cb), (gpointer *)B4800);
 
   GtkWidget *baud_rate_b9600 = gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(baud_rate_b4800), "9600");
   gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(baud_rate_b9600), andromeda_serial_baud_rate == B9600);
   gtk_widget_show(baud_rate_b9600);
-  gtk_grid_attach(GTK_GRID(grid), baud_rate_b9600, 2, 5, 1, 1);
+  gtk_grid_attach(GTK_GRID(grid), baud_rate_b9600, 3, 3, 1, 1);
   g_signal_connect(baud_rate_b9600, "toggled", G_CALLBACK(baud_rate_cb), (gpointer *)B9600);
 
   GtkWidget *baud_rate_b19200 = gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(baud_rate_b9600), "19200");
   gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(baud_rate_b19200), andromeda_serial_baud_rate == B19200);
   gtk_widget_show(baud_rate_b19200);
-  gtk_grid_attach(GTK_GRID(grid), baud_rate_b19200, 3, 5, 1, 1);
+  gtk_grid_attach(GTK_GRID(grid), baud_rate_b19200, 4, 3, 1, 1);
   g_signal_connect(baud_rate_b19200, "toggled", G_CALLBACK(baud_rate_cb), (gpointer *)B19200);
 
   GtkWidget *baud_rate_b38400 = gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(baud_rate_b19200), "38400");
   gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(baud_rate_b38400), andromeda_serial_baud_rate == B38400);
   gtk_widget_show(baud_rate_b38400);
-  gtk_grid_attach(GTK_GRID(grid), baud_rate_b38400, 4, 5, 1, 1);
+  gtk_grid_attach(GTK_GRID(grid), baud_rate_b38400, 5, 3, 1, 1);
   g_signal_connect(baud_rate_b38400, "toggled", G_CALLBACK(baud_rate_cb), (gpointer *)B38400);
 #endif
+
+  GtkWidget *andromeda_debug_b = gtk_check_button_new_with_label("Debug Andromeda");
+  gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(andromeda_debug_b), andromeda_debug);
+  gtk_widget_show(andromeda_debug_b);
+  gtk_grid_attach(GTK_GRID(grid), andromeda_debug_b, 1, 0, 1, 1);
+  g_signal_connect(andromeda_debug_b, "toggled", G_CALLBACK(andromeda_debug_cb), NULL);
  
   gtk_container_add(GTK_CONTAINER(content), grid);
   sub_menu = dialog;

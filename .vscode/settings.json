@@ -30,7 +30,8 @@
         "iphlpapi.h": "c",
         "glib-mainloop.h": "c",
         "condition_variable": "c",
-        "future": "c"
+        "future": "c",
+        "termios.h": "c"
     },
     "terminal.explorerKind": "integrated"
 }
