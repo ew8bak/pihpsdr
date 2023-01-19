@@ -31,7 +31,11 @@
         "glib-mainloop.h": "c",
         "condition_variable": "c",
         "future": "c",
-        "termios.h": "c"
+        "termios.h": "c",
+        "exception": "c",
+        "array": "c",
+        "string": "c",
+        "string_view": "c"
     },
     "terminal.explorerKind": "integrated"
 }

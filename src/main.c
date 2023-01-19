@@ -359,11 +359,6 @@ static void activate_pihpsdr(GtkApplication *app, gpointer data)
   fprintf(stderr, "add grid\n");
   gtk_container_add(GTK_CONTAINER(top_window), grid);
 
-  fprintf(stderr, "create image\n");
-  GtkWidget *image = gtk_image_new_from_file("hpsdr.png");
-  fprintf(stderr, "add image to grid\n");
-  gtk_grid_attach(GTK_GRID(grid), image, 0, 0, 1, 4);
-
   fprintf(stderr, "create pi label\n");
   char build[128];
   sprintf(build, "build: %s %s", build_date, version);
