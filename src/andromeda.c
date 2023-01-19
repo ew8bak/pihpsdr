@@ -1,17 +1,11 @@
 #include <gtk/gtk.h>
-#include <gdk/gdk.h>
-#include <errno.h>
 #include <fcntl.h>
 #include <string.h>
-#include <unistd.h>
 #include <stdio.h>
-#include <stdint.h>
-#include <stdlib.h>
 #include "receiver.h"
 #include "toolbar.h"
 #include "band_menu.h"
 #include "sliders.h"
-#include "rigctl.h"
 #include "radio.h"
 #include "channel.h"
 #include "filter.h"
@@ -24,17 +18,29 @@
 #include "sliders.h"
 #include "transmitter.h"
 #include "agc.h"
-#include <wdsp.h>
 #include "store.h"
 #include "ext.h"
-#include "rigctl_menu.h"
 #include "noise_menu.h"
 #include "new_protocol.h"
-#include <math.h>
 #include "actions.h"
 #include "andromeda.h"
+#include "andromeda_menu.h"
+
+#define MAXDATASIZE 2000
 
 gboolean implemented;
+
+typedef struct
+{
+    GMutex m;
+} GT_MUTEX;
+
+GT_MUTEX *mutex_andromeda;
+GT_MUTEX *mutex_andromeda_busy;
+static GThread *andromeda_serial_server_thread_id = NULL;
+static gboolean andromeda_serial_running = FALSE;
+int mutex_andromeda_exists = 0;
+int andromeda_fd;
 
 void parseAndromedaCommand(char *cmd)
 {
@@ -306,4 +312,98 @@ void FuncButton(int Button, gboolean State)
         a->mode = RELEASED;
         g_idle_add(process_action, a);
     }
+}
+
+static gpointer andromeda_serial_server(gpointer data)
+{
+    char cmd_input[MAXDATASIZE];
+    char *command = g_new(char, MAXDATASIZE);
+    int command_index = 0;
+    int numbytes;
+    int i;
+    andromeda_serial_running = TRUE;
+    while (andromeda_serial_running)
+    {
+        numbytes = read(andromeda_fd, cmd_input, sizeof cmd_input);
+        if (numbytes > 0)
+        {
+            for (i = 0; i < numbytes; i++)
+            {
+                command[command_index] = cmd_input[i];
+                command_index++;
+                if (cmd_input[i] == ';')
+                {
+                    command[command_index] = '\0';
+                    if (andromeda_debug)
+                        g_print("Andromeda: command=%s\n", command);
+                    g_mutex_lock(&mutex_andromeda_busy->m);
+                    g_idle_add(parseAndromedaCommand, command);
+                    g_mutex_unlock(&mutex_andromeda_busy->m);
+
+                    command = g_new(char, MAXDATASIZE);
+                    command_index = 0;
+                }
+            }
+        }
+        else if (numbytes < 0)
+        {
+            break;
+        }
+
+        // #ifdef _WIN32
+        // _sleep(1L);
+        //  #else
+        // usleep(100L);
+        //  #endif
+    }
+    return NULL;
+}
+
+int launch_serial_andromeda()
+{
+    g_print("Andromeda: Launch Serial port %s\n", andromeda_serial_port);
+    if (mutex_andromeda_exists == 0)
+    {
+        mutex_andromeda = g_new(GT_MUTEX, 1);
+        g_mutex_init(&mutex_andromeda->m);
+        mutex_andromeda_exists = 1;
+    }
+
+    if (mutex_andromeda_busy == NULL)
+    {
+        mutex_andromeda_busy = g_new(GT_MUTEX, 1);
+        g_print("Andromeda: mutex_andromeda_busy=%p\n", mutex_andromeda_busy);
+        g_mutex_init(&mutex_andromeda_busy->m);
+    }
+
+#ifdef _WIN32
+    andromeda_fd = _open(andromeda_serial_port, O_RDWR);
+#else
+    andromeda_fd = open(andromeda_serial_port, O_RDWR | O_NOCTTY | O_SYNC);
+#endif
+
+    if (andromeda_fd < 0)
+    {
+        g_print("Andromeda: Error %d opening %s: %s\n", errno, andromeda_serial_port, strerror(errno));
+        return 0;
+    }
+
+    g_print("Andromeda serial port andromeda_fd=%d\n", andromeda_fd);
+
+    set_interface_attribs(andromeda_fd, andromeda_serial_baud_rate, andromeda_serial_parity);
+    set_blocking(andromeda_fd, 1);
+
+    andromeda_serial_server_thread_id = g_thread_new("Andromeda serial server", andromeda_serial_server, NULL);
+    if (!andromeda_serial_server_thread_id)
+    {
+        g_print("g_thread_new failed on andromeda_serial_server\n");
+        return 0;
+    }
+    return 1;
+}
+
+void andromeda_disable_serial()
+{
+    g_print("Andromeda: Disable Serial port %s\n", andromeda_serial_port);
+    andromeda_serial_running = FALSE;
 }

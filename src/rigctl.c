@@ -57,10 +57,6 @@
 #endif
 #include <math.h>
 
-#ifdef ANDROMEDA
-#include "andromeda.h"
-#endif
-
 #ifdef _WIN32
 #include <winsock2.h>
 #include <windows.h>
@@ -3071,11 +3067,7 @@ gboolean parse_extended_cmd(char *command, CLIENT *client)
     }
     break;
   case 'Z': // ZZZx
-#ifdef ANDROMEDA
-    parseAndromedaCommand(command);
-#else
     implemented = FALSE;
-#endif
     break;
   default:
     implemented = FALSE;

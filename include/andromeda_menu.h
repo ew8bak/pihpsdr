@@ -23,6 +23,7 @@
 
 extern void andromeda_menu(GtkWidget *parent);
 extern char andromeda_serial_port[];
+extern int andromeda_serial_parity;
 extern void disable_serial();
 void create_combobox_br();
 

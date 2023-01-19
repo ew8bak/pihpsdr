@@ -35,7 +35,8 @@
         "exception": "c",
         "array": "c",
         "string": "c",
-        "string_view": "c"
+        "string_view": "c",
+        "andromeda_menu.h": "c"
     },
     "terminal.explorerKind": "integrated"
 }

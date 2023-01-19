@@ -30,6 +30,7 @@
 
 int andromeda_serial_enable = 0;
 char andromeda_serial_port[64] = "/dev/ttyACM0";
+int andromeda_serial_parity = 0;
 #ifdef _WIN32
 int andromeda_serial_baud_rate = 13; // B9600;
 #else
@@ -84,14 +85,14 @@ static void serial_enable_cb(GtkWidget *widget, gpointer data)
   andromeda_serial_enable = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
   if (andromeda_serial_enable)
   {
-    if (launch_serial() == 0)
+    if (launch_serial_andromeda() == 0)
     {
       gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), FALSE);
     }
   }
   else
   {
-    disable_serial();
+    andromeda_disable_serial();
   }
 }
 
