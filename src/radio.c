@@ -1396,6 +1396,13 @@ void start_radio()
     launch_serial();
   }
 
+  #ifdef ANDROMEDA
+  if (andromeda_serial_enable) 
+  {
+    launch_serial_andromeda();
+  }
+  #endif
+
   if (can_transmit)
   {
     calcDriveLevel();

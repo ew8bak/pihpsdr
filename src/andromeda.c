@@ -44,34 +44,37 @@ int andromeda_fd;
 
 void parseAndromedaCommand(char *cmd)
 {
-    switch (cmd[3])
+    if (cmd[2] == 'Z')
     {
-    case 'U': // ZZZU, VFO Encoder Up
-        ZZZU(cmd);
-        break;
-    case 'D': // ZZZD, VFO Encoder Down
-        ZZZD(cmd);
-        break;
-    case 'P': // ZZZP, Button
-        ZZZP(cmd);
-        break;
-    case 'E': // ZZZP, Encoder
-        ZZZE(cmd);
-        break;
-    default:
-        implemented = FALSE;
-        break;
+        switch (cmd[3])
+        {
+        case 'U': // ZZZU, VFO Encoder Up
+            ZZZU(cmd);
+            break;
+        case 'D': // ZZZD, VFO Encoder Down
+            ZZZD(cmd);
+            break;
+        case 'P': // ZZZP, Button
+            ZZZP(cmd);
+            break;
+        case 'E': // ZZZP, Encoder
+            ZZZE(cmd);
+            break;
+        default:
+            implemented = FALSE;
+            break;
+        }
     }
 }
 
 void ZZZU(char *cmd)
 {
-    vfo_step(1);
+   // vfo_step(1);
 }
 
 void ZZZD(char *cmd)
 {
-    vfo_step(-1);
+   // vfo_step(-1);
 }
 
 void ZZZP(char *cmd)
@@ -356,6 +359,7 @@ static gpointer andromeda_serial_server(gpointer data)
         // usleep(100L);
         //  #endif
     }
+    close(andromeda_fd);
     return NULL;
 }
 
