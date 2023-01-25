@@ -36,7 +36,8 @@
         "array": "c",
         "string": "c",
         "string_view": "c",
-        "andromeda_menu.h": "c"
+        "andromeda_menu.h": "c",
+        "andromeda.h": "c"
     },
     "terminal.explorerKind": "integrated"
 }

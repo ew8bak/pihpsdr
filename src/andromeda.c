@@ -403,6 +403,7 @@ int launch_serial_andromeda()
         g_print("g_thread_new failed on andromeda_serial_server\n");
         return 0;
     }
+  //  andromeda_send_resp(andromeda_fd, "ZZZS;");
     return 1;
 }
 
@@ -410,4 +411,28 @@ void andromeda_disable_serial()
 {
     g_print("Andromeda: Disable Serial port %s\n", andromeda_serial_port);
     andromeda_serial_running = FALSE;
+}
+
+void andromeda_send_resp(int fd, char *msg)
+{
+  if (andromeda_debug)
+    g_print("Andromeda: RESP=%s\n", msg);
+  int length = strlen(msg);
+  int rc;
+  int count = 0;
+
+  while (length > 0)
+  {
+    rc = write(fd, msg, length);
+    if (rc < 0)
+      return;
+    if (rc == 0)
+    {
+      count++;
+      if (count > 10)
+        return;
+    }
+    length -= rc;
+    msg += rc;
+  }
 }

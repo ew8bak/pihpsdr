@@ -22,5 +22,6 @@ void shiftLo_encoder_change(int step);
 void RitXitButton(gboolean State, gboolean LongPress);
 void BandButton(int Button);
 void FuncButton(int Button, gboolean State);
+void andromeda_send_resp(int fd, char *msg);
 
 #endif // ANDROMEDA_H
