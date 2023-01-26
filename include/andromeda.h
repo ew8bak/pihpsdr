@@ -4,11 +4,12 @@
 #include <gtk/gtk.h>
 #include <gdk/gdk.h>
 
-void parseAndromedaCommand(char *cmd);
+void parseAndromedaCommand(void *data);
 void ZZZU(char *cmd);
 void ZZZD(char *cmd);
 void ZZZP(char *cmd);
 void ZZZE(char *cmd);
+void ZZZS(char *cmd);
 void HandleFrontPanelButtonPress(int Button, gboolean State, gboolean LongPress);
 void HandleFrontPanelEncoderStep(int Encoder, int Step);
 void af_encoder_change(int step, int radio);
@@ -23,5 +24,8 @@ void RitXitButton(gboolean State, gboolean LongPress);
 void BandButton(int Button);
 void FuncButton(int Button, gboolean State);
 void andromeda_send_resp(int fd, char *msg);
+int launch_serial_andromeda();
+int set_andromeda_interface_attribs(int fd, int speed, int parity);
+void set_andromeda_blocking(int fd, int should_block);
 
 #endif // ANDROMEDA_H

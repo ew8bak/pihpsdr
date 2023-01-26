@@ -1,6 +1,5 @@
 #include <gtk/gtk.h>
 #include <fcntl.h>
-#include <string.h>
 #include <stdio.h>
 #include "receiver.h"
 #include "toolbar.h"
@@ -21,10 +20,22 @@
 #include "store.h"
 #include "ext.h"
 #include "noise_menu.h"
-#include "new_protocol.h"
 #include "actions.h"
 #include "andromeda.h"
 #include "andromeda_menu.h"
+#include <termios.h>
+
+typedef struct _client
+{
+    int fd;
+    GThread *thread_id;
+} CLIENT;
+
+typedef struct _command
+{
+    CLIENT *client;
+    char *command;
+} COMMAND;
 
 #define MAXDATASIZE 2000
 
@@ -42,23 +53,31 @@ static gboolean andromeda_serial_running = FALSE;
 int mutex_andromeda_exists = 0;
 int andromeda_fd;
 
-void parseAndromedaCommand(char *cmd)
+void parseAndromedaCommand(void *data)
 {
-    if (cmd[2] == 'Z')
+    COMMAND *info = (COMMAND *)data;
+    CLIENT *client = info->client;
+    char *command = info->command;
+    char reply[80];
+    reply[0] = '\0';
+    if (command[2] == 'Z')
     {
-        switch (cmd[3])
+        switch (command[3])
         {
         case 'U': // ZZZU, VFO Encoder Up
-            ZZZU(cmd);
+            ZZZU(command);
             break;
         case 'D': // ZZZD, VFO Encoder Down
-            ZZZD(cmd);
+            ZZZD(command);
             break;
         case 'P': // ZZZP, Button
-            ZZZP(cmd);
+            ZZZP(command);
             break;
         case 'E': // ZZZP, Encoder
-            ZZZE(cmd);
+            ZZZE(command);
+            break;
+        case 'S':
+            ZZZS(command);
             break;
         default:
             implemented = FALSE;
@@ -67,14 +86,20 @@ void parseAndromedaCommand(char *cmd)
     }
 }
 
+void ZZZS(char *cmd)
+{
+    printf(cmd);
+}
+
+
 void ZZZU(char *cmd)
 {
-   // vfo_step(1);
+    vfo_step(1);
 }
 
 void ZZZD(char *cmd)
 {
-   // vfo_step(-1);
+    vfo_step(-1);
 }
 
 void ZZZP(char *cmd)
@@ -319,6 +344,7 @@ void FuncButton(int Button, gboolean State)
 
 static gpointer andromeda_serial_server(gpointer data)
 {
+    CLIENT *client = (CLIENT *)data;
     char cmd_input[MAXDATASIZE];
     char *command = g_new(char, MAXDATASIZE);
     int command_index = 0;
@@ -339,8 +365,11 @@ static gpointer andromeda_serial_server(gpointer data)
                     command[command_index] = '\0';
                     if (andromeda_debug)
                         g_print("Andromeda: command=%s\n", command);
+                    COMMAND *info = g_new(COMMAND, 1);
+                    info->client = client;
+                    info->command = command;
                     g_mutex_lock(&mutex_andromeda_busy->m);
-                    g_idle_add(parseAndromedaCommand, command);
+                    g_idle_add(parseAndromedaCommand, info);
                     g_mutex_unlock(&mutex_andromeda_busy->m);
 
                     command = g_new(char, MAXDATASIZE);
@@ -352,12 +381,6 @@ static gpointer andromeda_serial_server(gpointer data)
         {
             break;
         }
-
-        // #ifdef _WIN32
-        // _sleep(1L);
-        //  #else
-        // usleep(100L);
-        //  #endif
     }
     close(andromeda_fd);
     return NULL;
@@ -394,8 +417,8 @@ int launch_serial_andromeda()
 
     g_print("Andromeda serial port andromeda_fd=%d\n", andromeda_fd);
 
-    set_interface_attribs(andromeda_fd, andromeda_serial_baud_rate, andromeda_serial_parity);
-    set_blocking(andromeda_fd, 1);
+    set_andromeda_interface_attribs(andromeda_fd, andromeda_serial_baud_rate, andromeda_serial_parity);
+    set_andromeda_blocking(andromeda_fd, 1);
 
     andromeda_serial_server_thread_id = g_thread_new("Andromeda serial server", andromeda_serial_server, NULL);
     if (!andromeda_serial_server_thread_id)
@@ -403,7 +426,7 @@ int launch_serial_andromeda()
         g_print("g_thread_new failed on andromeda_serial_server\n");
         return 0;
     }
-  //  andromeda_send_resp(andromeda_fd, "ZZZS;");
+    andromeda_send_resp(andromeda_fd, "ZZZS;");
     return 1;
 }
 
@@ -415,24 +438,89 @@ void andromeda_disable_serial()
 
 void andromeda_send_resp(int fd, char *msg)
 {
-  if (andromeda_debug)
-    g_print("Andromeda: RESP=%s\n", msg);
-  int length = strlen(msg);
-  int rc;
-  int count = 0;
+    if (andromeda_debug)
+        g_print("Andromeda: RESP=%s\n", msg);
+    int length = strlen(msg);
+    int rc;
+    int count = 0;
 
-  while (length > 0)
-  {
-    rc = write(fd, msg, length);
-    if (rc < 0)
-      return;
-    if (rc == 0)
+    while (length > 0)
     {
-      count++;
-      if (count > 10)
+        rc = write(fd, msg, length);
+        if (rc < 0)
+            return;
+        if (rc == 0)
+        {
+            count++;
+            if (count > 10)
+                return;
+        }
+        length -= rc;
+        msg += rc;
+    }
+}
+
+int set_andromeda_interface_attribs(int fd, int speed, int parity)
+{
+#ifdef _WIN32
+    ///???
+#else
+    struct termios tty;
+    memset(&tty, 0, sizeof tty);
+    if (tcgetattr(fd, &tty) != 0)
+    {
+        g_print("Andromeda: Error %d from tcgetattr", errno);
+        return -1;
+    }
+
+    cfsetospeed(&tty, speed);
+    cfsetispeed(&tty, speed);
+
+    tty.c_cflag = (tty.c_cflag & ~CSIZE) | CS8; // 8-bit chars
+    // disable IGNBRK for mismatched speed tests; otherwise receive break
+    // as \000 chars
+    tty.c_iflag &= ~IGNBRK; // disable break processing
+    tty.c_lflag = 0;        // no signaling chars, no echo,
+                            // no canonical processing
+    tty.c_oflag = 0;        // no remapping, no delays
+    tty.c_cc[VMIN] = 0;     // read doesn't block
+    tty.c_cc[VTIME] = 5;    // 0.5 seconds read timeout
+
+    // tty.c_iflag &= ~(IXON | IXOFF | IXANY); // shut off xon/xoff ctrl
+    tty.c_iflag |= (IXON | IXOFF | IXANY); // shut off xon/xoff ctrl
+
+    tty.c_cflag |= (CLOCAL | CREAD);   // ignore modem controls,
+                                       // enable reading
+    tty.c_cflag &= ~(PARENB | PARODD); // shut off parity
+    tty.c_cflag |= parity;
+    tty.c_cflag &= ~CSTOPB;
+    tty.c_cflag &= ~CRTSCTS;
+
+    if (tcsetattr(fd, TCSANOW, &tty) != 0)
+    {
+        g_print("Andromeda: Error %d from tcsetattr", errno);
+        return -1;
+    }
+#endif
+    return 0;
+}
+
+void set_andromeda_blocking(int fd, int should_block)
+{
+#ifdef _WIN32
+    ///???
+#else
+    struct termios tty;
+    memset(&tty, 0, sizeof tty);
+    if (tcgetattr(fd, &tty) != 0)
+    {
+        g_print("Andromeda: Error %d from tggetattr\n", errno);
         return;
     }
-    length -= rc;
-    msg += rc;
-  }
+    tty.c_cc[VMIN] = should_block ? 1 : 0;
+    tty.c_cc[VTIME] = 5; // 0.5 seconds read timeout
+
+    if (tcsetattr(fd, TCSANOW, &tty) != 0)
+        g_print("Andromeda: error %d setting term attributes\n", errno);
+#endif
 }
