@@ -21,28 +21,11 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/types.h>
-
-#include <string.h>
-#include <errno.h>
-#include <fcntl.h>
-
 #ifdef _WIN32
 #include <winsock2.h>
 #include <windows.h>
 #include <ws2tcpip.h>
 #include <iphlpapi.h>
-struct ifaddrs
-{
-    struct ifaddrs *ifa_next;     /* Next item in list */
-    char *ifa_name;               /* Name of interface */
-    unsigned int ifa_flags;       /* Flags from SIOCGIFFLAGS */
-    struct sockaddr *ifa_addr;    /* Address of interface */
-    struct sockaddr *ifa_netmask; /* Netmask of interface */
-    struct sockaddr_storage in_addrs;
-    struct sockaddr_storage in_netmasks;
-    char ad_name[16];
-    size_t speed;
-};
 #else
 #include <sys/socket.h>
 #include <sys/ioctl.h>
@@ -54,6 +37,9 @@ struct ifaddrs
 #include <ifaddrs.h>
 #include <sys/select.h>
 #endif
+#include <string.h>
+#include <errno.h>
+#include <fcntl.h>
 
 #include "discovered.h"
 #include "discovery.h"
@@ -72,15 +58,7 @@ static GThread *discover_thread_id;
 static gpointer discover_receive_thread(gpointer data);
 
 #ifdef _WIN32
-//static void discover(int IFnum, u_long IFaddr, u_long IFnet_mask);
-static void discover(struct ifaddrs *iface);
-#else
-static void discover(struct ifaddrs *iface);
-#endif
-
-#ifdef _WIN32
-//static void discover(int IFnum, u_long IFaddr, u_long IFnet_mask)
-static void discover(struct ifaddrs *iface)
+static void discover(int ifNum, u_long ifAddr, u_long ifNet_mask, gboolean tcp)
 #else
 static void discover(struct ifaddrs *iface)
 #endif
@@ -89,6 +67,8 @@ static void discover(struct ifaddrs *iface)
     struct sockaddr_in *sa;
     struct sockaddr_in *mask;
     struct sockaddr_in to_addr = {0};
+    char addr[16];
+    char net_mask[16];
     int flags;
     struct timeval tv;
     int optval;
@@ -96,8 +76,11 @@ static void discover(struct ifaddrs *iface)
     fd_set fds;
     unsigned char buffer[1032];
     int i, len;
-
+#ifdef _WIN32
+    if (tcp)
+#else
     if (iface == NULL)
+#endif
     {
         //
         // This indicates that we want to connect to an SDR which
@@ -111,11 +94,10 @@ static void discover(struct ifaddrs *iface)
         to_addr.sin_family = AF_INET;
 #ifdef _WIN32
         if (inet_pton(AF_INET, ipaddr_tcp, &to_addr.sin_addr) == 0)
-        {
 #else
         if (inet_aton(ipaddr_tcp, &to_addr.sin_addr) == 0)
-        {
 #endif
+        {
             fprintf(stderr, "discover: TCP addr %s is invalid!\n", ipaddr_tcp);
             return;
         }
@@ -145,7 +127,6 @@ static void discover(struct ifaddrs *iface)
         flags = fcntl(discovery_socket, F_GETFL, 0);
         fcntl(discovery_socket, F_SETFL, flags | O_NONBLOCK);
 #endif
-
         rc = connect(discovery_socket, (const struct sockaddr *)&to_addr, sizeof(to_addr));
         if ((errno != EINPROGRESS) && (rc < 0))
         {
@@ -200,9 +181,13 @@ static void discover(struct ifaddrs *iface)
     }
     else
     {
-
+#ifdef _WIN32
+        IN_ADDR IPAddr;
+        sprintf(interface_name, "%s %d", "Ethernet", ifNum);
+#else
         strcpy(interface_name, iface->ifa_name);
-        fprintf(stderr, "discover: looking for HPSDR devices on %s\n", interface_name);
+#endif
+        fprintf(stderr, "old_discover: looking for HPSDR devices on %s\n", interface_name);
 
         // send a broadcast to locate hpsdr boards on the network
         discovery_socket = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
@@ -211,27 +196,40 @@ static void discover(struct ifaddrs *iface)
             perror("discover: create socket failed for discovery_socket:");
             exit(-1);
         }
-
+        interface_addr.sin_family = AF_INET;
+#ifdef _WIN32
+        interface_netmask.sin_addr.s_addr = ifNet_mask;
+        interface_addr.sin_addr.s_addr = ifAddr;
+#else
         sa = (struct sockaddr_in *)iface->ifa_addr;
         mask = (struct sockaddr_in *)iface->ifa_netmask;
-        interface_netmask.sin_addr.s_addr = mask->sin_addr.s_addr;
-
-        // bind to this interface and the discovery port
-        interface_addr.sin_family = AF_INET;
         interface_addr.sin_addr.s_addr = sa->sin_addr.s_addr;
-        // interface_addr.sin_port = htons(DISCOVERY_PORT*2);
-        interface_addr.sin_port = htons(0); // system assigned port
+        interface_netmask.sin_addr.s_addr = mask->sin_addr.s_addr;
+#endif
+        interface_addr.sin_port = htons(0);
+
         if (bind(discovery_socket, (struct sockaddr *)&interface_addr, sizeof(interface_addr)) < 0)
         {
             perror("discover: bind socket failed for discovery_socket:");
             return;
         }
 
-        fprintf(stderr, "discover: bound to %s\n", interface_name);
+//   fprintf(stderr, "discover: bound to %s\n", interface_name);
+#ifdef _WIN32
+        IPAddr.S_un.S_addr = ifAddr;
+        strcpy(addr, inet_ntoa(IPAddr));
+        g_print("\tIP Address:     \t%s\n", inet_ntoa(IPAddr));
+        IPAddr.S_un.S_addr = ifNet_mask;
+        strcpy(net_mask, inet_ntoa(IPAddr));
+#else
+        strcpy(addr, inet_ntoa(sa->sin_addr));
+        strcpy(net_mask, inet_ntoa(mask->sin_addr));
+#endif
+        fprintf(stderr, "discover: bound to %s %s %s\n", interface_name, addr, net_mask);
 
         // allow broadcast on the socket
         int on = 1;
-        rc = setsockopt(discovery_socket, SOL_SOCKET, SO_BROADCAST, (char *) &on, sizeof(on));
+        rc = setsockopt(discovery_socket, SOL_SOCKET, SO_BROADCAST, &on, sizeof(on));
         if (rc != 0)
         {
             fprintf(stderr, "discover: cannot set SO_BROADCAST: rc=%d\n", rc);
@@ -244,8 +242,7 @@ static void discover(struct ifaddrs *iface)
         to_addr.sin_addr.s_addr = htonl(INADDR_BROADCAST);
     }
     optval = 1;
-    setsockopt(discovery_socket, SOL_SOCKET, SO_REUSEADDR, (char *) &optval, sizeof(optval));
-    // setsockopt(discovery_socket, SOL_SOCKET, SO_REUSEPORT, &optval, sizeof(optval));
+    setsockopt(discovery_socket, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval));
 
     rc = devices;
     // start a receive thread to collect discovery response packets
@@ -259,7 +256,11 @@ static void discover(struct ifaddrs *iface)
     // send discovery packet
     // If this is a TCP connection, send a "long" packet
     len = 63;
+#ifdef _WIN32
+    if (tcp)
+#else
     if (iface == NULL)
+#endif
         len = 1032;
     buffer[0] = 0xEF;
     buffer[1] = 0xFE;
@@ -277,10 +278,17 @@ static void discover(struct ifaddrs *iface)
 
     // wait for receive thread to complete
     g_thread_join(discover_thread_id);
-
+#ifdef _WIN32
+    closesocket(discovery_socket);
+#else
     close(discovery_socket);
+#endif
 
+#ifdef _WIN32
+    if (tcp)
+#else
     if (iface == NULL)
+#endif
     {
         fprintf(stderr, "discover: exiting TCP discover for %s\n", ipaddr_tcp);
         if (devices == rc + 1)
@@ -301,7 +309,11 @@ static void discover(struct ifaddrs *iface)
     }
     else
     {
+#ifdef _WIN32
+        fprintf(stderr, "discover: exiting discover\n");
+#else
         fprintf(stderr, "discover: exiting discover for %s\n", iface->ifa_name);
+#endif
     }
 }
 
@@ -316,7 +328,6 @@ static gpointer discover_receive_thread(gpointer data)
     int i;
 
     fprintf(stderr, "discover_receive_thread\n");
-
 #ifdef _WIN32
     int timeout = 2000;
     setsockopt(discovery_socket, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout, sizeof(timeout));
@@ -329,7 +340,11 @@ static gpointer discover_receive_thread(gpointer data)
     len = sizeof(addr);
     while (1)
     {
+#ifdef _WIN32
+        bytes_read = recvfrom(discovery_socket, buffer, sizeof(buffer), 0, (struct sockaddr *)&addr, &len);
+#else
         bytes_read = recvfrom(discovery_socket, buffer, sizeof(buffer), 1032, (struct sockaddr *)&addr, &len);
+#endif
         if (bytes_read < 0)
         {
             fprintf(stderr, "discovery: bytes read %d\n", bytes_read);
@@ -462,9 +477,18 @@ static gpointer discover_receive_thread(gpointer data)
 void old_discovery()
 {
     struct ifaddrs *addrs, *ifa;
-#ifdef _WIN32
-#else
+    int i;
     fprintf(stderr, "old_discovery\n");
+#ifdef _WIN32
+    PMIB_IPADDRTABLE pIPAddrTable;
+    pIPAddrTable = getIfAddressWin();
+    for (i = 0; i < (int)pIPAddrTable->dwNumEntries; i++)
+    {
+        g_print("\n\tSearch on Interface Index:\t%ld\n", pIPAddrTable->table[i].dwIndex);
+        discover(pIPAddrTable->table[i].dwIndex, (u_long)pIPAddrTable->table[i].dwAddr, pIPAddrTable->table[i].dwMask, FALSE);
+    }
+    discover(pIPAddrTable->table[i].dwIndex, (u_long)pIPAddrTable->table[i].dwAddr, pIPAddrTable->table[i].dwMask, TRUE);
+#else
     getifaddrs(&addrs);
     ifa = addrs;
     while (ifa)
@@ -487,7 +511,6 @@ void old_discovery()
 #endif
     fprintf(stderr, "discovery found %d devices\n", devices);
 
-    int i;
     for (i = 0; i < devices; i++)
     {
         fprintf(stderr, "discovery: found device=%d software_version=%d status=%d address=%s (%02X:%02X:%02X:%02X:%02X:%02X) on %s\n",

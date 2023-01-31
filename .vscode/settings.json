@@ -30,7 +30,9 @@
         "iphlpapi.h": "c",
         "glib-mainloop.h": "c",
         "condition_variable": "c",
-        "future": "c"
+        "future": "c",
+        "discovery.h": "c",
+        "old_discovery.h": "c"
     },
     "terminal.explorerKind": "integrated"
 }

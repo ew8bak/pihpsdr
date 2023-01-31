@@ -21,6 +21,13 @@
 #define _OLD_DISCOVERY_H
 
 void old_discovery(void);
+
+#ifdef _WIN32
+static void discover(int ifNum, u_long ifAddr, u_long ifNet_mask, gboolean tcp);
+#else
+static void discover(struct ifaddrs *iface);
+#endif
+
 #ifdef STEMLAB_DISCOVERY
 int  stemlab_get_info(int id);
 #endif
