@@ -411,7 +411,7 @@ int main (int argc, char ** argv)
   WSADATA data;
   if (WSAStartup(wVersionRequested, &data) != 0)
   {
-    wprintf("WSAStartup Failed. Error Code : %d", WSAGetLastError());
+    wprintf(L"WSAStartup Failed. Error Code : %d", WSAGetLastError());
     return 1;
   }
 #endif

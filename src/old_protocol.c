@@ -451,10 +451,12 @@ static void open_udp_socket()
     data_socket = -1;
 #ifdef _WIN32
     _sleep(100);
+    closesocket(tmp);
 #else
     usleep(100000);
-#endif
     close(tmp);
+#endif
+   
   }
   tmp = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
   if (tmp < 0)
@@ -472,7 +474,11 @@ static void open_udp_socket()
   //      perror("data_socket: SO_REUSEPORT");
   //    }
   optval = 0xffff;
+#ifdef _WIN32
+  if (setsockopt(tmp, SOL_SOCKET, SO_SNDBUF, (char *)&optval, sizeof(optval)) < 0)
+#else
   if (setsockopt(tmp, SOL_SOCKET, SO_SNDBUF, &optval, sizeof(optval)) < 0)
+#endif
   {
     perror("data_socket: SO_SNDBUF");
   }
@@ -487,6 +493,14 @@ static void open_udp_socket()
   // instructing the radio to switch to TCP. Then this call has to finish eventually
   // and the next recvfrom() then uses the TCP socket.
   //
+
+#ifdef _WIN32
+  DWORD timeout_ms = 100;
+  if (setsockopt(tmp, SOL_SOCKET, SO_RCVTIMEO, (const char *)&timeout_ms, sizeof(timeout_ms)) == SOCKET_ERROR)
+  {
+    fprintf(stderr, "data_socket: SO_RCVTIMEO failed, error=%d\n", WSAGetLastError());
+  }
+#else
   struct timeval tv;
   tv.tv_sec = 0;
   tv.tv_usec = 100000;
@@ -494,6 +508,7 @@ static void open_udp_socket()
   {
     perror("data_socket: SO_RCVTIMEO");
   }
+#endif
 
   // bind to the interface
   g_print("binding UDP socket to %s:%d\n", inet_ntoa(radio->info.network.interface_address.sin_addr), ntohs(radio->info.network.interface_address.sin_port));
@@ -519,10 +534,11 @@ static void open_tcp_socket()
     tcp_socket = -1;
 #ifdef _WIN32
     _sleep(100);
+    closesocket(tmp);
 #else
     usleep(100000);
-#endif
     close(tmp);
+#endif
   }
   memcpy(&data_addr, &radio->info.network.address, radio->info.network.address_length);
   data_addr.sin_port = htons(DATA_PORT);
@@ -548,11 +564,19 @@ static void open_tcp_socket()
     perror("tcp_socket: connect");
   }
   optval = 0xffff;
+#ifdef _WIN32
+  if (setsockopt(tmp, SOL_SOCKET, SO_SNDBUF, (char *)&optval, sizeof(optval)) < 0)
+#else
   if (setsockopt(tmp, SOL_SOCKET, SO_SNDBUF, &optval, sizeof(optval)) < 0)
+#endif
   {
     perror("tcp_socket: SO_SNDBUF");
   }
+#ifdef _WIN32
+  if (setsockopt(tmp, SOL_SOCKET, SO_RCVBUF, (char *)&optval, sizeof(optval)) < 0)
+#else
   if (setsockopt(tmp, SOL_SOCKET, SO_RCVBUF, &optval, sizeof(optval)) < 0)
+#endif
   {
     perror("tcp_socket: SO_RCVBUF");
   }
@@ -2495,10 +2519,11 @@ static void metis_start_stop(int command)
       // give some time to swallow incoming TCP packets
 #ifdef _WIN32
       _sleep(100);
+      closesocket(tmp);
 #else
     usleep(100000);
+    close(tmp);
 #endif
-      close(tmp);
       g_print("TCP socket closed\n");
     }
 

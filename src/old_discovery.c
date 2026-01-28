@@ -156,7 +156,11 @@ static void discover(struct ifaddrs *iface)
         }
         // Step 3. select() succeeded. Check success of connect()
         optlen = sizeof(int);
+#ifdef _WIN32
+	rc = getsockopt(discovery_socket, SOL_SOCKET, SO_ERROR, (char *)&optval, &optlen);
+#else
         rc = getsockopt(discovery_socket, SOL_SOCKET, SO_ERROR, &optval, &optlen);
+#endif
         if (rc < 0)
         {
             // this should very rarely happen
@@ -229,7 +233,11 @@ static void discover(struct ifaddrs *iface)
 
         // allow broadcast on the socket
         int on = 1;
+#ifdef _WIN32
+	rc = setsockopt(discovery_socket, SOL_SOCKET, SO_BROADCAST, (char *)&on, sizeof(on));
+#else
         rc = setsockopt(discovery_socket, SOL_SOCKET, SO_BROADCAST, &on, sizeof(on));
+#endif
         if (rc != 0)
         {
             fprintf(stderr, "discover: cannot set SO_BROADCAST: rc=%d\n", rc);
@@ -242,7 +250,11 @@ static void discover(struct ifaddrs *iface)
         to_addr.sin_addr.s_addr = htonl(INADDR_BROADCAST);
     }
     optval = 1;
+#ifdef _WIN32
+    setsockopt(discovery_socket, SOL_SOCKET, SO_REUSEADDR, (char *)&optval, sizeof(optval));
+#else
     setsockopt(discovery_socket, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval));
+#endif
 
     rc = devices;
     // start a receive thread to collect discovery response packets

@@ -752,8 +752,11 @@ static gpointer rigctl_server(gpointer data)
     perror("rigctl_server: listen socket failed");
     return NULL;
   }
-
+#ifdef _WIN32
+  setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, (char *)&on, sizeof(on));
+#else
   setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
+#endif
   // setsockopt(server_socket, SOL_SOCKET, SO_REUSEPORT, &on, sizeof(on));
 
   // bind to listening port
@@ -4414,7 +4417,7 @@ int parse_cmd(void *data)
         {
           int p2 = atoi(&command[3]);
           active_receiver->squelch = (int)((double)p2 / 255.0 * 100.0);
-          set_squelch(active_receiver);
+          set_squelch();
         }
       }
       else

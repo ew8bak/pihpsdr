@@ -176,7 +176,8 @@ int audio_open_input()
 
   framesPerBuffer = MY_AUDIO_BUFFER_SIZE; // is this for either protocol
 
-  bzero(&inputParameters, sizeof(inputParameters)); // not necessary if you are filling in all the fields
+  //bzero(&inputParameters, sizeof(inputParameters)); // not necessary if you are filling in all the fields
+  memset(&inputParameters, 0, sizeof(inputParameters));
   inputParameters.channelCount = 1;                 // MONO
   inputParameters.device = padev;
   inputParameters.hostApiSpecificStreamInfo = NULL;
@@ -334,7 +335,8 @@ int audio_open_output(RECEIVER *rx)
   }
 
   g_mutex_lock(&rx->local_audio_mutex);
-  bzero(&outputParameters, sizeof(outputParameters)); // not necessary if you are filling in all the fields
+  //bzero(&outputParameters, sizeof(outputParameters)); // not necessary if you are filling in all the fields
+  memset(&outputParameters, 0, sizeof(outputParameters));
   outputParameters.channelCount = 1;                  // Always MONO
   outputParameters.device = padev;
   outputParameters.hostApiSpecificStreamInfo = NULL;
@@ -371,7 +373,8 @@ int audio_open_output(RECEIVER *rx)
   }
   // Write one buffer to avoid under-flow errors
   // (this gives us 5 msec to pass before we have to call audio_write the first time)
-  bzero(rx->local_audio_buffer, (size_t)MY_AUDIO_BUFFER_SIZE * sizeof(float));
+  //bzero(rx->local_audio_buffer, (size_t)MY_AUDIO_BUFFER_SIZE * sizeof(float));
+  memset(rx->local_audio_buffer, 0, (size_t)MY_AUDIO_BUFFER_SIZE * sizeof(float));
   Pa_WriteStream(rx->playback_handle, rx->local_audio_buffer, (unsigned long)MY_AUDIO_BUFFER_SIZE);
   g_mutex_unlock(&rx->local_audio_mutex);
   return 0;
